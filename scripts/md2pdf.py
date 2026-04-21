@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # md2pdf.py — Markdown → PDF (no cover, no TOC, no header/footer via CDP)
-import sys, os, re, subprocess, time, json, tempfile, urllib.request
+import sys, os, re, subprocess, time, json, tempfile, urllib.request, base64
 from pathlib import Path
 from datetime import datetime
 
@@ -142,49 +142,16 @@ def md_to_html(md_path):
     return "".join(html_parts)
 
 
-def write_cdp_script(ws_url, abs_html, abs_pdf):
-    """Write CDP client script to temp file"""
-    lines = []
-    w = lines.append
-    w('# -*- coding: utf-8 -*-\n')
-    w('import json,time,os\n')
-    w('from websocket import create_connection\n')
-    w('ws=create_connection("%s",timeout=15)\n' % ws_url)
-    w('mid=[1];cbs={}\n')
-    w('def c(m,p=None,cb=None):\n')
-    w(' i=mid[0];mid[0]+=1\n')
-    w(' if cb:cbs[i]=cb\n')
-    w(' d={"id":i,"method":m}\n')
-    w(' if p:d["params"]=p\n')
-    w(' ws.send(json.dumps(d))\n')
-    w('def w(n):\n')
-    w(' for _ in range(n):\n')
-    w('  try:\n')
-    w('   m=json.loads(ws.recv())\n')
-    w('   if m.get("id")in cbs:cbs.pop(m["id"])(m);return\n')
-    w('  except:break\n')
-    w('c("Page.enable");w(3)\n')
-    w('c("Page.navigate",{"url":"file://%s"});time.sleep(4);w(3)\n' % abs_html)
-    w('def on(r):\n')
-    w(' d=r.get("result",{}).get("data")\n')
-    w(' if d:\n')
-    w('  with open("%s","wb")as f:f.write(bytes(d,"utf-8"))\n' % abs_pdf)
-    w('  print("CDP_OK:"+str(len(bytes(d,"utf-8"))))\n')
-    w(' else:print("CDP_FAIL:"+str(r)[:200])\n')
-    w('c("Page.printToPDF",{"displayHeaderFooter":False,"printBackground":True,"preferCSSPageSize":True,"paperWidth":8.27,"paperHeight":11.69,"marginTop":0.4,"marginBottom":0.4,"marginLeft":0.4,"marginRight":0.4},on)\n')
-    w('w(10)\nws.close()\n')
-    return "".join(lines)
-
-
 def html_to_pdf(html_path, pdf_path):
-    """Chrome CDP via page-level target: displayHeaderFooter=False"""
+    """Chrome CDP via page-level target: displayHeaderFooter=False + base64 decode"""
     import subprocess as sp, pathlib as pl
+    from websocket import create_connection
 
     abs_html = str(pl.Path(html_path).resolve())
     abs_pdf = str(pl.Path(pdf_path).resolve())
     port = 19999
 
-    # Ensure Chrome is running
+    # Ensure Chrome running
     try:
         urllib.request.urlopen("http://127.0.0.1:%d/json/version" % port, timeout=2)
     except Exception:
@@ -194,7 +161,7 @@ def html_to_pdf(html_path, pdf_path):
             stdout=sp.DEVNULL, stderr=sp.DEVNULL)
         time.sleep(4)
 
-    # Get page-level WS URL (not browser-level!)
+    # Get PAGE-level WS URL (browser-level doesn't support printToPDF!)
     try:
         resp = urllib.request.urlopen("http://127.0.0.1:%d/json/list" % port)
         tabs = json.loads(resp.read().decode())
@@ -202,39 +169,64 @@ def html_to_pdf(html_path, pdf_path):
     except Exception as e:
         print("❌ Chrome connect failed: %s" % e); return False
 
-    # Write CDP script (page-level)
-    tf_path = "/tmp/cdp_print_%d.py" % port
-    with open(tf_path, "w") as tf:
-        tf.write("# -*- coding: utf-8 -*-\n")
-        tf.write("import json,time,os\n")
-        tf.write("from websocket import create_connection\n")
-        tf.write("ws=create_connection(\"%s\",timeout=15)\n" % ws_url)
-        tf.write("mid=[1];cbs={}\n")
-        tf.write("def c(m,p=None,cb=None):\n i=mid[0];mid[0]+=1\n if cb:cbs[i]=cb\n d={\"id\":i,\"method\":m}\n if p:d[\"params\"]=p\n ws.send(json.dumps(d))\n")
-        tf.write("def w(n):\n for _ in range(n):\n  try:\n   m=json.loads(ws.recv())\n   if m.get(\"id\")in cbs:cbs.pop(m[\"id\"])(m);return\n  except:break\n")
-        tf.write("c(\"Page.navigate\",{\"url\":\"file://%s\"});time.sleep(4);w(5)\n" % abs_html)
-        tf.write("def on(r):\n d=r.get(\"result\",{}).get(\"data\")\n if d:\n  with open(\"%s\",\"wb\")as f:f.write(bytes(d,\"utf-8\"))\n  print(\"CDP_OK:\"+str(len(bytes(d,\"utf-8\"))))\n else:print(\"CDP_FAIL:\"+str(r)[:200])\n" % abs_pdf)
-        tf.write("c(\"Page.printToPDF\",{\"displayHeaderFooter\":False,\"printBackground\":True,\"preferCSSPageSize\":True,\"paperWidth\":8.27,\"paperHeight\":11.69,\"marginTop\":0.4,\"marginBottom\":0.4,\"marginLeft\":0.4,\"marginRight\":0.4},on)\n")
-        tf.write("w(15)\nws.close()\n")
+    # Direct CDP communication (no temp script - avoids all escaping hell)
+    ws = create_connection(ws_url, timeout=15)
+    mid = [1]
 
-    r = sp.run([sys.executable,tf_path],stdout=sp.PIPE,stderr=sp.PIPE,timeout=35)
-    try: os.remove(tf_path)
-    except: pass
+    def cdp(method, params=None):
+        i = mid[0]; mid[0] += 1
+        msg = {"id": i, "method": method}
+        if params: msg["params"] = params
+        ws.send(json.dumps(msg))
 
-    out = r.stdout.decode() if isinstance(r.stdout,bytes) else r.stdout
-    err = r.stderr.decode() if isinstance(r.stderr,bytes) else r.stderr
+    def wait_for(n):
+        for _ in range(n):
+            try:
+                m = json.loads(ws.recv())
+                return m
+            except:
+                break
+        return None
 
-    if "CDP_OK" in out:
+    # Navigate
+    cdp("Page.navigate", {"url": "file://%s" % abs_html})
+    time.sleep(4)
+    wait_for(3)  # drain events
+
+    # PrintToPDF with no header/footer
+    cdp("Page.printToPDF", {
+        "displayHeaderFooter": False,
+        "printBackground": True,
+        "preferCSSPageSize": True,
+        "paperWidth": 8.27, "paperHeight": 11.69,
+        "marginTop": 0.4, "marginBottom": 0.4,
+        "marginLeft": 0.4, "marginRight": 0.4,
+    })
+
+    # Wait for response
+    result = None
+    for _ in range(15):
+        try:
+            m = json.loads(ws.recv())
+            if m.get("id") == mid[0] - 1:
+                result = m
+                break
+        except:
+            break
+
+    ws.close()
+
+    if result and result.get("result", {}).get("data"):
+        pdf_data = base64.b64decode(result["result"]["data"])
+        with open(abs_pdf, "wb") as f:
+            f.write(pdf_data)
         size = os.path.getsize(abs_pdf)
-        print("✅ PDF: %s (%d KB)"%(pl.Path(pdf_path).name,size//1024))
+        print("✅ PDF: %s (%d KB)" % (pl.Path(pdf_path).name, size // 1024))
         return True
     else:
-        print("❌ PDF failed:")
-        print((err or out)[:300])
+        print("❌ PDF generation failed:")
+        print(str(result)[:300] if result else "No response")
         return False
-
-
-    return False
 
 
 def main():
