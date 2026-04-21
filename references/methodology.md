@@ -85,12 +85,34 @@ Agent的上下文窗口会被压缩。压缩后，前面轮次的分析细节会
       "queries": ["搜了什么"],
       "intent": "为什么搜这些（本轮搜索目标）",
       "results_summary": "发现了什么（一句话）",
+      "urls_found": [                                    // ★ 新增：本轮发现的所有有价值URL
+        {"url": "https://...", "title": "标题", "relevance": "high|medium|low", "tagged_to": "RE-001/S-003/通用"}
+      ],
       "new_seeds": ["S-001", "S-002"],
       "new_risks": ["RE-001"],
       "information_gain": "high|medium|low|none",
       "next_thinking": "基于结果，下一步想做什么"
     }
   ],
+
+  "url_registry": {                                     // ★ 新增：URL中央注册表
+    "_meta": "所有有价值的URL的中央索引。写报告时直接从这里取，不用翻raw文件。",
+    "total_count": 0,
+    "by_relevance": {
+      "high": [],   // 高价值URL（直接点名品牌的负面/央媒/权威信源）
+      "medium": [], // 中等价值（行业媒体/间接相关）
+      "low": []     // 低值（UGC/转载/仅提及）
+    },
+    "by_event": {   // 按风险事件索引
+      "RE-001": [],
+      "RE-002": []
+    },
+    "by_sentiment": {
+      "positive": [],
+      "neutral": [],
+      "negative": []
+    }
+  },
 
   "convergence": {
     "is_converged": false,
@@ -342,4 +364,63 @@ parent字段记录来源，可以追溯"我为什么要搜这个"。
 
 ---
 
-*v3.1: 从v3.0的纯思维模型升级为带物理载体的迭代机制。核心变化：(1)status.json从"可选草稿纸"升级为"必须维护的迭代中枢"，定义完整schema；(2)新增hidden_state隐匿发现子体系(lens_log/coverage_map/evolution_chain)；(3)§六 新增时效性原则——系统目标是预警而非考古。*
+## 七、URL中央注册机制
+
+### 7.1 为什么需要
+
+**报告中的URL缺失是质量硬伤。** 原因：URL散落在raw/文件中，写报告时Agent需要逐个翻找——容易遗漏、容易偷懒。
+
+**解法：每轮搜索后立即把有价值的URL提取到 status.json 的 url_registry 中。写报告时直接从 registry 取用。**
+
+### 7.2 操作规则
+
+**每轮搜索结束后，执行以下动作（与状态更新同步完成）：**
+
+1. **读本轮 raw 文件**，提取所有结果中的 URL
+2. **对每个URL判断**：
+   - relevance: high（直接相关负面/央媒/权威）| medium（行业媒体/间接）| low（转载/UGC）
+   - tagged_to: 关联到哪个风险事件/种子？（RE-001 / S-003 / "通用"）
+   - sentiment: positive / neutral / negative
+3. **写入两处**：
+   - `search_log[round].urls_found` — 本轮发现的URL列表
+   - `url_registry` — 按relevance/event/sentiment三个维度索引
+
+### 7.3 url_registry 格式
+
+```json
+{
+  "url_registry": {
+    "total_count": 15,
+    "by_relevance": {
+      "high": [
+        {"url": "https://...", "title": "...", "round": 1, "tagged_to": "RE-001", "sentiment": "negative"}
+      ],
+      "medium": [...],
+      "low": [...]
+    },
+    "by_event": {
+      "RE-001": ["url1", "url2"],
+      "RE-002": ["url3"]
+    },
+    "by_sentiment": {
+      "positive": ["url4"],
+      "neutral": ["url5"],
+      "negative": ["url1", "url2", "url3"]
+    }
+  }
+}
+```
+
+### 7.4 写报告时的使用方式
+
+```
+写第二章（详细分析）→ 从 url_registry.by_event["RE-001"] 取URL
+写第六章（信息源表）→ 从 url_registry.by_relevance["high"] 开始填
+写6.4隐匿信源    → 从 url_registry 中筛选 hidden_risks_found 关联的URL
+```
+
+**原则：registry中有的URL必须出现在报告中。registry中没有的URL不允许凭空编造。**
+
+---
+
+*v3.1: (1)status.json从"可选草稿纸"升级为"必须维护的迭代中枢"；(2)新增hidden_state隐匿发现子体系；(3)§六 时效性原则；(4)§七 URL中央注册机制——解决报告中URL缺失问题。*

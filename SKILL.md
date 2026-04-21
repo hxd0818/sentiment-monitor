@@ -94,7 +94,8 @@ cp assets/status-template.json data/{品牌名}/status.json
 ⑤ 【关键】**立即**更新 status.json（不是最后统一写）：
    - seed_pool：新增种子、标记成熟/枯竭、记录子种子分裂
    - risk_events：新增事件、更新unknowns（删除已解答的、添加新产生的）
-   - search_log：追加本轮记录（intent/results_summary/information_gain/next_thinking）
+   - search_log：追加本轮记录（intent/results_summary/**urls_found**/information_gain/next_thinking）
+   - **url_registry：从本轮raw文件中提取所有有价值URL，按relevance/event/sentiment三维索引**
    - hidden_state：如果本轮执行了隐匿发现，更新lens_log/coverage_map/evolution_chain
    - convergence：更新主循环和隐匿子体系的收敛证据
    - **⚠️ 时效标记**：每个新种子和风险事件必须标注 time_tag（current/recent/stale/historical）
@@ -158,6 +159,7 @@ python3 scripts/md2pdf.py report_v1.3.md report.pdf
 | 不维护status.json或不每轮更新 | **status.json是迭代中枢，每轮必须立即更新。不更新=失忆=假迭代** |
 | 把status.json当成产出物交给用户 | 它是内部记忆载体，用户只看报告 |
 | 对陈旧历史信息（1年以上）扩散深挖 | **目标是预警不是考古。stale/historical级别不触发扩散和隐匿扫描** |
+| 报告中URL大量缺失 | **每轮必须把URL提取到url_registry中。写报告时从registry取，不翻raw文件** |
 
 ---
 
