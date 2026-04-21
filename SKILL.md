@@ -101,6 +101,13 @@ cp assets/status-template.json data/{品牌名}/status.json
    - **⚠️ 时效标记**：每个新种子和风险事件必须标注 time_tag（current/recent/stale/historical）
    - **⚠️ 时效筛选**：不扩散深挖 stale/historical 级别的信息（见 methodology §六）
 
+⑥ **【必选】检查是否需要脱品牌名追踪（methodology §七）**：
+   - 事件被中央/国家级信源通报？→ 立即执行
+   - L2+风险事件？→ 执行
+   - 叙事框架在升级？→ 再次执行
+   - 提取事件指纹 → 设计纯指纹Query（不含品牌名）→ 搜索 → 实体归因判断
+   - **这是防漏报的最关键步骤。不可跳过。**
+
 ⑥ 判断是否收敛（见 methodology.md §三.3）
    不收敛 → 回到①
    收敛 → 进入第三步
@@ -118,6 +125,7 @@ cp assets/status-template.json data/{品牌名}/status.json
 |-----------|--------|-------|
 | 不知道该怎么设计搜索方向 | `references/methodology.md` §二~§四 | 种子池+Query哲学 |
 | 需要理解迭代机制 | `references/methodology.md` §一~§三 | 状态机+扩散+收敛 |
+| 事件被中央通报/需要脱品牌名追踪 | `references/methodology.md` **§七（必选）** | 脱品牌名追踪：指纹提取+纯指纹Query+实体归因 |
 | 发现了L2+事件，想启动隐匿发现子体系 | `references/hidden-risk-discovery.md` | 隐匿发现迭代体系（hidden_state/链式演化/7透镜） |
 | 需要对事件做纵深挖掘 | `references/risk-tracking.md` | 五个深挖角度 |
 | 常规搜索时想保持警觉 | `references/early-detection.md` | 四个观察维度 |
@@ -160,6 +168,7 @@ python3 scripts/md2pdf.py report_v1.3.md report.pdf
 | 把status.json当成产出物交给用户 | 它是内部记忆载体，用户只看报告 |
 | 对陈旧历史信息（1年以上）扩散深挖 | **目标是预警不是考古。stale/historical级别不触发扩散和隐匿扫描** |
 | 报告中URL大量缺失 | **每轮必须把URL提取到url_registry中。写报告时从registry取，不翻raw文件** |
+| 事件被中央通报后仍只用品牌名搜索 | **必须执行§七脱品牌名追踪：提取事件指纹→纯指纹Query搜索→实体归因。这是必选步骤，不可跳过** |
 
 ---
 
