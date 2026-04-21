@@ -186,83 +186,83 @@ def md_to_html(md_path):
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>%s — 舆情分析报告</title>
+<title>{0} — 舆情分析报告</title>
 <style>
-  @page { size: A4; margin: 0; }
-  * { box-sizing: border-box; }
-  body {
+  @page {{ size: A4; margin: 0; }}
+  * {{ box-sizing: border-box; }}
+  body {{
     font-family: 'PingFang SC','Noto Sans CJK SC','Microsoft YaHei','WenQuanYi Micro Hei',sans-serif;
     color: #1a1a2e; line-height: 1.82; font-size: 12px;
     padding: 15mm 16mm 18mm 16mm; margin: 0; background: #fff;
-  }
-  .cover { page-break-after: always; text-align: center; padding-top: 180px; }
-  .cover h1 { font-size: 28px; color: #0f766e; margin-bottom: 16px; font-weight: 800; letter-spacing: 2px; }
-  .cover .subtitle { font-size: 15px; color: #374151; margin: 24px 0; }
-  .cover .meta-box {
+  }}
+  .cover {{ page-break-after: always; text-align: center; padding-top: 180px; }}
+  .cover h1 {{ font-size: 28px; color: #0f766e; margin-bottom: 16px; font-weight: 800; letter-spacing: 2px; }}
+  .cover .subtitle {{ font-size: 15px; color: #374151; margin: 24px 0; }}
+  .cover .meta-box {{
     display: inline-block; background: linear-gradient(135deg,#ecfeff 0%%%%,#dbeafe 100%%);
     border-radius: 12px; padding: 20px 40px; margin-top: 30px; text-align: left;
     font-size: 12.5px; color: #1e3a8a; line-height: 2;
-  }
-  .cover .meta-box strong { color: #0891b2; }
-  .cover .footer-note { margin-top: 80px; font-size: 10px; color: #94a3b8; }
-  #toc { page-break-after: always; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 28px; margin: 20px 0; }
-  #toc h2 { font-size: 16px; color: #0891b2; border: none; margin-bottom: 12px; }
-  #toc ul { list-style: none; padding-left: 0; }
-  #toc li { padding: 4px 0; font-size: 12px; border-bottom: 1px dotted #e2e8f0; }
-  #toc li:last-child { border-bottom: none; }
-  #toc a { color: #0284c7; text-decoration: none; }
-  #toc a:hover { color: #0369a1; text-decoration: underline; }
-  .toc-l1 { padding-left: 0 !important; font-weight: 600; font-size: 13px; }
-  .toc-l2 { padding-left: 20px !important; font-weight: 400; }
-  h1 { font-size: 22px; color: #0f766e; border-bottom: 3px solid #0ea5e9; padding-bottom: 10px; margin-top: 36px; font-weight: 700; page-break-after: avoid; }
-  h2 { font-size: 16px; color: #0369a1; border-left: 4px solid #0ea5e9; padding-left: 12px; margin-top: 28px; font-weight: 600; page-break-after: avoid; }
-  h3 { font-size: 13.5px; color: #0c4a6e; margin-top: 20px; font-weight: 600; page-break-after: avoid; }
-  h4 { font-size: 12.5px; color: #047857; margin-top: 16px; font-weight: 600; page-break-after: avoid; }
-  table { width: 100%; border-collapse: collapse; margin: 10px 0 12px 0; font-size: 9pt; page-break-inside: avoid; table-layout: fixed; word-wrap: break-word; overflow-wrap: break-word; }
-  th, td { border: 1px solid #e5e7eb; padding: 5px 8px; text-align: left; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all; }
-  th { background: linear-gradient(180deg,#f0fdfa 0%%%%,#f0f9ff 100%%); font-weight: 600; color: #0c4a6e; font-size: 11px; }
-  tr:nth-child(even) { background: #f8fafc; }
-  tr:hover { background: #f0f9ff; }
-  p { margin: 6px 0; text-align: justify; }
-  blockquote { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px 16px; margin: 12px 0; font-style: italic; color: #92400e; border-radius: 0 8px 8px 0; page-break-inside: avoid; }
-  hr { border: none; border-top: 2px solid #e2e8f0; margin: 20px 0; }
-  strong, b { color: #1e3a8a; }
-  em, i { color: #64748b; }
-  code { background: #f0fdfa; padding: 1px 5px; border-radius: 3px; font-size: 11px; color: #991b1b; font-family: 'Consolas',monospace; }
-  pre { background: #0c4a6e; color: #e2e8f0; padding: 14px 18px; border-radius: 8px; overflow-x: auto; font-size: 11px; page-break-inside: avoid; }
-  pre code { background: none; color: inherit; padding: 0; }
-  ul, ol { padding-left: 20px; margin: 6px 0; }
-  li { margin: 3px 0; }
-  .page-footer { text-align: center; color: #94a3b8; font-size: 9px; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
-  .risk-fatal { color: #dc2626; font-weight: 700; }
-  .risk-high { color: #ea580c; font-weight: 700; }
-  .risk-med { color: #d97706; font-weight: 700; }
-  .risk-low { color: #65a30d; font-weight: 700; }
-  @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .cover { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 0; }
-    #toc { break-after: page; }
-    h1, h2, h3, h4 { break-after: avoid; }
-    table { break-inside: avoid-page; }
-  }
+  }}
+  .cover .meta-box strong {{ color: #0891b2; }}
+  .cover .footer-note {{ margin-top: 80px; font-size: 10px; color: #94a3b8; }}
+  #toc {{ page-break-after: always; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 28px; margin: 20px 0; }}
+  #toc h2 {{ font-size: 16px; color: #0891b2; border: none; margin-bottom: 12px; }}
+  #toc ul {{ list-style: none; padding-left: 0; }}
+  #toc li {{ padding: 4px 0; font-size: 12px; border-bottom: 1px dotted #e2e8f0; }}
+  #toc li:last-child {{ border-bottom: none; }}
+  #toc a {{ color: #0284c7; text-decoration: none; }}
+  #toc a:hover {{ color: #0369a1; text-decoration: underline; }}
+  .toc-l1 {{ padding-left: 0 !important; font-weight: 600; font-size: 13px; }}
+  .toc-l2 {{ padding-left: 20px !important; font-weight: 400; }}
+  h1 {{ font-size: 22px; color: #0f766e; border-bottom: 3px solid #0ea5e9; padding-bottom: 10px; margin-top: 36px; font-weight: 700; page-break-after: avoid; }}
+  h2 {{ font-size: 16px; color: #0369a1; border-left: 4px solid #0ea5e9; padding-left: 12px; margin-top: 28px; font-weight: 600; page-break-after: avoid; }}
+  h3 {{ font-size: 13.5px; color: #0c4a6e; margin-top: 20px; font-weight: 600; page-break-after: avoid; }}
+  h4 {{ font-size: 12.5px; color: #047857; margin-top: 16px; font-weight: 600; page-break-after: avoid; }}
+  table {{ width: 100%; border-collapse: collapse; margin: 10px 0 12px 0; font-size: 9pt; page-break-inside: avoid; table-layout: fixed; word-wrap: break-word; overflow-wrap: break-word; }}
+  th, td {{ border: 1px solid #e5e7eb; padding: 5px 8px; text-align: left; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all; }}
+  th {{ background: linear-gradient(180deg,#f0fdfa 0%%%%,#f0f9ff 100%%); font-weight: 600; color: #0c4a6e; font-size: 11px; }}
+  tr:nth-child(even) {{ background: #f8fafc; }}
+  tr:hover {{ background: #f0f9ff; }}
+  p {{ margin: 6px 0; text-align: justify; }}
+  blockquote {{ background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px 16px; margin: 12px 0; font-style: italic; color: #92400e; border-radius: 0 8px 8px 0; page-break-inside: avoid; }}
+  hr {{ border: none; border-top: 2px solid #e2e8f0; margin: 20px 0; }}
+  strong, b {{ color: #1e3a8a; }}
+  em, i {{ color: #64748b; }}
+  code {{ background: #f0fdfa; padding: 1px 5px; border-radius: 3px; font-size: 11px; color: #991b1b; font-family: 'Consolas',monospace; }}
+  pre {{ background: #0c4a6e; color: #e2e8f0; padding: 14px 18px; border-radius: 8px; overflow-x: auto; font-size: 11px; page-break-inside: avoid; }}
+  pre code {{ background: none; color: inherit; padding: 0; }}
+  ul, ol {{ padding-left: 20px; margin: 6px 0; }}
+  li {{ margin: 3px 0; }}
+  .page-footer {{ text-align: center; color: #94a3b8; font-size: 9px; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 12px; }}
+  .risk-fatal {{ color: #dc2626; font-weight: 700; }}
+  .risk-high {{ color: #ea580c; font-weight: 700; }}
+  .risk-med {{ color: #d97706; font-weight: 700; }}
+  .risk-low {{ color: #65a30d; font-weight: 700; }}
+  @media print {{
+    body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+    .cover {{ height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 0; }}
+    #toc {{ break-after: page; }}
+    h1, h2, h3, h4 {{ break-after: avoid; }}
+    table {{ break-inside: avoid-page; }}
+  }}
 </style>
 </head>
 <body>
 
 <div class="cover">
   <h1>📊 品牌舆情分析<br>深度报告</h1>
-  <div class="subtitle">目标：%s</div>
+  <div class="subtitle">目标：{1}</div>
   <div class="meta-box">
-    <strong>📋 报告版本:</strong> %s<br>
-    <strong>📅 数据截止:</strong> %s<br>
+    <strong>📋 报告版本:</strong> {2}<br>
+    <strong>📅 数据截止:</strong> {3}<br>
     <strong>📊 调查方法:</strong> 舆情螺旋迭代法 (Agent驱动)<br>
     <strong>🔧 技术支持:</strong> 赛迪网<br>
     <strong>📊 分析方法:</strong> 舆情螺旋迭代法 + 早期发现四层漏斗 + 隐匿性风险发现<br>
-    <strong>📄 生成时间:</strong> %s
+    <strong>📄 生成时间:</strong> {4}
   </div>
   <p class="footer-note">警告: 本报告基于公开OSINT数据生成，仅供研究参考，不构成任何商业决策建议</p>
 </div>
-""" % (brand, brand, version, date_str, datetime.now().strftime("%%Y-%%m-%%d %%H:%%M"))
+""".format(brand, brand, version, date_str, datetime.now().strftime("%Y-%m-%d %H:%M"))
 
     if toc_html:
         html += toc_html
