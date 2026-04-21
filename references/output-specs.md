@@ -19,7 +19,7 @@ data/{品牌名}/
 └── report_v1.3.pdf               # 最终报告PDF
 ```
 
-## status.json 最小Schema（复制 templates/status-template.json 后填空）
+## status.json 最小Schema（复制 assets/status-template.json 后填空）
 
 必须包含的字段：
 

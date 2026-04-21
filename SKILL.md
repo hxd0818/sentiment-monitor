@@ -2,8 +2,11 @@
 name: sentiment-monitor
 description: >
   基于LLM的品牌负面信息早期发现与隐匿风险深挖系统。
-  核心能力：早期发现 + 隐匿发现 + 风险深挖 + 框架升级检测。
-  方法论驱动：Agent自主思考搜什么、何时停，不依赖硬编码规则。
+  核心能力：早期发现(四层漏斗) + 隐匿性发现(七大思考透镜) + 风险深挖(五步法) + 框架升级检测 + 二阶传播追踪。
+  产出：8章结构舆情监控报告(PDF) + hidden_risks.json + status.json。
+  触发场景：品牌舆情监控、危机预警、负面信息挖掘、隐匿风险探测、
+  竞品负面追踪、舆情框架升级监测、企业市场地位评估中的舆情维度分析。
+  方法论驱动：Agent基于迭代思维模型自主决定搜索方向和收敛时机，不依赖硬编码规则。
 ---
 
 # 品牌舆情监控 Skill
@@ -76,7 +79,7 @@ python3 scripts/sentiment-collect.py "品牌名" --round 0 \
 
 ### 写报告 & 转PDF
 
-- 按 `templates/report-template.md` 的8章结构写报告
+- 按 `assets/report-template.md` 的8章结构写报告
 - 信源带URL，技术支持固定写"赛迪网"，不出现搜索工具名
 - 第六章6.4隐匿信源数据来自 `hidden_risks.json`
 - 报告写完后立即转PDF：
@@ -97,7 +100,7 @@ python3 scripts/sentiment-collect.py "品牌名" --round 0 \
 | `references/risk-tracking.md` | 需要深挖L2+事件时 | 五步法纵深挖掘 |
 | `references/early-detection.md` | 每轮常规搜索时 | 早期发现四层漏斗 |
 | `references/report-writing-guide.md` | 写报告时 | 8章写作规范+自检清单 |
-| `templates/report-template.md` | 写报告时 | 唯一的格式基准 |
+| `assets/report-template.md` | 写报告时 | 唯一的格式基准 |
 | `references/examples/saidi-leakage-case.md` | 遇到类似场景时 | 真实漏报案例，从错误中学习 |
 
 ---
@@ -136,7 +139,7 @@ sentiment-monitor/
 ├── scripts/
 │   ├── sentiment-collect.py          ← 数据采集脚本（唯一搜索入口）
 │   └── md2pdf.py                     ← MD转PDF
-├── templates/
+├── assets/
 │   ├── report-template.md            ← 8章报告模板
 │   └── status-template.json          ← status.json填空模板
 └── references/
