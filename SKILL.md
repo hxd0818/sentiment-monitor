@@ -3,7 +3,7 @@ name: sentiment-monitor
 description: >
   基于LLM的品牌负面信息早期发现与隐匿风险深挖系统。
   核心能力：早期发现(四层漏斗) + 隐匿性发现(七大思考透镜) + 风险深挖(五步法) + 框架升级检测 + 二阶传播追踪。
-  产出：8章结构舆情监控报告(PDF) + hidden_risks.json + status.json。
+  最终产出：8章结构舆情监控报告(MD + PDF)。
   触发场景：品牌舆情监控、危机预警、负面信息挖掘、隐匿风险探测、
   竞品负面追踪、舆情框架升级监测、企业市场地位评估中的舆情维度分析。
   方法论驱动：Agent基于迭代思维模型自主决定搜索方向和收敛时机，不依赖硬编码规则。
@@ -15,6 +15,7 @@ description: >
 
 **目标**：尽可能早地发现负面信息，挖掘常规搜索找不到的隐匿风险信号。
 **不是做一份漂亮的报告，而是找到别人找不到的负面。**
+**最终只交付一件事：一份高质量的舆情监控报告（MD + PDF）。**
 
 ## 架构
 
@@ -25,109 +26,101 @@ Agent（分析师）                      脚本（工具）
 | 发现 → 设计新query| <--结果-- | 零业务逻辑       |
 | 判断何时停        |            +------------------+
 +-------------------+
+
+唯一产出：report_v1.3.md + report.pdf
+其余文件(raw/status/json)均为思考过程的中间产物，随用随弃
 ```
 
-**Agent = 大脑（决定搜什么、分析什么、何时停）。脚本 = 手（搜索+存文件）。**
+**Agent = 大脑（决定搜什么、分析什么、何时停、怎么写报告）。**
+**脚本 = 手（搜索+存文件，零业务逻辑）。**
 Agent 不直接调用 web_search / web_fetch / 百度工具。所有数据收集通过脚本完成。
 
 ---
 
 ## 执行流程
 
-### Phase 0: 初始化
+### 第一步：初始化了解品牌
 
 ```bash
 # 百科查询（建立品牌基础画像）
 python3 scripts/sentiment-collect.py "品牌名" --baike
 
-# 初始泛化搜索
+# 初始泛化搜索（3-5个宽泛Query）
 python3 scripts/sentiment-collect.py "品牌名" --round 0 \
   --query "品牌名" "品牌名 新闻" "品牌名 评价"
 ```
 
-读结果 → 提取初始种子实体 → 创建 `status.json`
+读结果，建立对品牌的初步认知：
+- 这个品牌是谁？做什么的？谁在管？
+- 目前能看到什么？（正面/中性/负面）
+- 有没有一眼就能识别的风险信号？
 
-### 主循环：搜索→分析→思考→扩散
+可以用 `assets/status-template.json` 作为初始记录模板（也可以不用——这只是帮你整理思路的工具）。
 
-反复执行以下循环，直到判断收敛：
+### 第二步：迭代搜索与分析（核心）
 
+反复执行「搜索→阅读→思考→再搜索」循环，直到判断没有更多值得挖掘的内容。
+
+**每次循环的思考方式**（详细方法论见 `references/methodology.md`）：
+
+1. **我目前知道什么？** — 回顾已发现的实体、事件、信号
+2. **这意味着什么？** — 判断严重程度、叙事框架、潜在关联
+3. **我还不知道什么？** — 识别盲区：哪些角度没覆盖？哪些信源没触达？
+4. **我怎么去发现？** — 设计能回答③的问题的搜索词
+5. **执行搜索，读结果，回到①**
+
+**深挖触发**：当某个信号值得关注时，自然地围绕它展开：
+- 想知道更多细节？→ `--fetch-url` 抓全文
+- 想知道有没有关联方出事？→ 用R2透镜思考并设计搜索
+- 担心这件事被框架升级了？→ 用R6透镜思考并验证
+- 想知道脱品牌名的二次传播？→ 用事件指纹搜索
+
+**参考文件按需读取**（不要预先全部读完）：
+
+| 需要的时候 | 读什么 | 为什么 |
+|-----------|--------|-------|
+| 不知道该怎么设计搜索方向 | `references/methodology.md` §一~§二 | 迭代模型+种子池演化 |
+| 发现了L2+事件，想找隐匿信号 | `references/hidden-risk-discovery.md` | 七大思考透镜 |
+| 需要对事件做纵深挖掘 | `references/risk-tracking.md` | 五步法 |
+| 常规搜索时想系统覆盖 | `references/early-detection.md` | 四层漏斗 |
+| 准备写报告了 | `references/report-writing-guide.md` | 8章写作规范 |
+| 遇到类似之前漏报的情况 | `references/examples/saidi-leakage-case.md` | 从错误中学习 |
+
+### 第三步：写报告
+
+- 按 `assets/report-template.md` 的8章结构撰写
+- 所有信源带URL（从 raw/ 文件中提取）
+- 数据来源只列媒体/网站名称，不列搜索工具名
+- 技术支持固定写：赛迪网
+- 第六章6.4隐匿信源：基于你在分析过程中发现的隐匿信号整理填写（如果你用了hidden_risks.json做笔记，可以从中取材；如果没用，直接根据记忆和分析写）
+
+### 第四步：转PDF
+
+```bash
+# 方法A（推荐）
+python3 scripts/md2pdf.py report_v1.3.md report.pdf
+
+# 方法B（备用）：Chrome headless方案，见 md2pdf.py 内注释
 ```
-① 基于当前种子池和上轮发现，思考本轮应该搜什么方向
-   （参考 references/methodology.md 的迭代思维模型）
 
-② 设计Query并执行搜索：
-   python3 scripts/sentiment-collect.py "品牌" --round N --query "q1" "q2" "q3"
-
-③ 读搜索结果，逐条分析：
-   - 提取新实体 → 加入种子池
-   - 识别情感信号和风险事件
-   - 对高相关结果抓全文：--fetch-url "URL"
-   - **特别注意**：同一事件是否以新的更危险的叙事框架出现？
-
-④ 如果发现了L2+风险事件或隐匿信号，围绕它展开深挖：
-   - 风险深挖：references/risk-tracking.md（五步法）
-   - 隐匿发现：references/hidden-risk-discovery.md（七大思考透镜）
-   - 二阶传播：用事件指纹（不含品牌名）搜索脱品牌名的二次传播
-
-⑤ 更新 status.json
-
-⑥ 判断是否收敛（参考 methodology.md §一.1.3 收敛原则）
-```
-
-**关键**：这不是"完成N个步骤就进入下一轮"的打钩流程。
-这是一个连续的思考过程。每轮的搜索方向、深度、侧重点都应该基于上一轮的分析结果自主决定。
-
-### 写报告 & 转PDF
-
-- 按 `assets/report-template.md` 的8章结构写报告
-- 信源带URL，技术支持固定写"赛迪网"，不出现搜索工具名
-- 第六章6.4隐匿信源数据来自 `hidden_risks.json`
-- 报告写完后立即转PDF：
-  ```bash
-  # 方法A（推荐）：内置脚本
-  python3 scripts/md2pdf.py report_v1.3.md report.pdf
-  # 方法B（备用）：见 scripts/md2pdf.py 内的Chrome方案
-  ```
+**报告写完后立即转PDF。不可跳过。**
 
 ---
 
-## 核心参考文件（按需阅读）
+## 正确做法 vs 错误做法
 
-| 文件 | 什么时候读 | 核心内容 |
-|------|-----------|---------|
-| `references/methodology.md` | **主循环开始前必读** | 迭代思维模型、种子池演化、Query设计哲学、收敛原则 |
-| `references/hidden-risk-discovery.md` | 发现L2+事件后 | 七大隐匿性思考透镜（R1-R7），启发式而非清单式 |
-| `references/risk-tracking.md` | 需要深挖L2+事件时 | 五步法纵深挖掘 |
-| `references/early-detection.md` | 每轮常规搜索时 | 早期发现四层漏斗 |
-| `references/report-writing-guide.md` | 写报告时 | 8章写作规范+自检清单 |
-| `assets/report-template.md` | 写报告时 | 唯一的格式基准 |
-| `references/examples/saidi-leakage-case.md` | 遇到类似场景时 | 真实漏报案例，从错误中学习 |
-
----
-
-## 硬性禁令
-
-| # | ❌ 禁止 | ✅ 正确做法 |
-|---|--------|-----------|
-| 1 | 自己调web_search/web_fetch/百度工具收集数据 | 全部通过 sentiment-collect.py 脚本 |
-| 2 | 出现任何搜索工具名称 | 只写媒体/网站名称 |
-| 3 | 技术支持写其他内容 | 固定写：赛迪网 |
-| 4 | 自创模板外章节 | 只写template中的8章 |
-| 5 | 不生成status.json / hidden_risks.json | 三个沉淀文件缺一不可 |
-| 6 | 编造URL | 找不到就写"URL缺失: 原因说明" |
-| 7 | 将"同一事件+新框架"误判为重复信息 | 识别为框架升级信号，独立分析 |
-| 8 | 只看snippet就对高相关结果下结论 | 必须抓全文再判断 |
-| 9 | 机械式执行固定Query清单而不思考 | 基于分析结果自主设计每轮搜索方向 |
-
----
-
-## 数据沉淀
-
-| 文件 | 内容 | 创建时机 |
-|------|------|---------|
-| `raw/*.txt` | 每次搜索原始结果 | 脚本自动写入 |
-| `status.json` | 迭代状态中枢（种子池、风险事件、轮次等） | Phase 0创建，每轮更新 |
-| `hidden_risks.json` | 隐匿性风险信号表 | 首次隐匿发现时创建，之后追加 |
+| ❌ 错误 | ✅ 正确 |
+|--------|---------|
+| 自己调web_search/web_fetch/百度工具收集数据 | 全部通过 sentiment-collect.py 脚本 |
+| 出现任何搜索工具名称在报告中 | 只写媒体/网站名称 |
+| 技术支持写其他内容 | 固定写：赛迪网 |
+| 自创模板外章节 | 只写template中的8章 |
+| 编造URL | 找不到就写"URL缺失: 原因说明" |
+| 只看snippet就对高相关结果下结论 | 必须抓全文再判断 |
+| 把同一事件+新框架当成重复信息 | 识别为框架升级信号，重点分析 |
+| 为了"完成步骤"而搜索 | 每次搜索都应有明确的信息获取目标 |
+| 把status.json/hidden_risks.json当成产出物 | 它们是思考用的草稿纸，唯一产出是报告 |
+| 按固定清单机械执行Query | 基于分析自主决定每轮搜什么方向 |
 
 ---
 
@@ -141,25 +134,15 @@ sentiment-monitor/
 │   └── md2pdf.py                     ← MD转PDF
 ├── assets/
 │   ├── report-template.md            ← 8章报告模板
-│   └── status-template.json          ← status.json填空模板
+│   └── status-template.json          ← 可选的状态记录模板（非强制）
 └── references/
-    ├── methodology.md                ← ★ 核心方法论（必读）
-    ├── hidden-risk-discovery.md      ← 隐匿发现思考透镜
+    ├── methodology.md                ← ★ 核心方法论（迭代思维模型）
+    ├── hidden-risk-discovery.md      ← 隐匿发现七大思考透镜
     ├── risk-tracking.md              ← 风险深挖五步法
     ├── early-detection.md            ← 早期发现四层漏斗
-    ├── report-writing-guide.md       ← 写作规范+自检
+    ├── report-writing-guide.md       ← 写作规范+自检清单
     ├── analyst-identity.md           ← 分析师身份设定
     ├── output-specs.md               ← 输出格式规范
     └── examples/
         └── saidi-leakage-case.md     ← 漏报案例研究（从错误中学习）
 ```
-
----
-
-## 版本记录
-
-| 版本 | 变化 |
-|------|------|
-| v1.0-v2.2 | 初版 → 引入采集脚本 → 防覆盖机制 |
-| v2.3-v2.5 | 加入Step 3E二阶追踪/R6扩展到9组/PDF稳定化（打补丁式改进） |
-| **v3.0** | **彻底重构为方法论驱动。删除所有硬编码Query模板/强制执行清单/内联CSS。SKILL.md从336行精简至~120行。新增methodology.md核心思维模型和examples/案例库。Agent从操作工变为分析师。** |

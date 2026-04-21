@@ -1,87 +1,83 @@
-# 产出物格式规范 v2.1
+# 过程辅助文件参考
 
-> **只保留实际需要的产出物定义。**
+> **这些文件都是Agent思考过程中的辅助工具，不是最终产出。**
+> **唯一产出是 report_v1.3.md + report.pdf。**
+> **你可以用这些文件来整理思路，也可以不用——按你的工作习惯决定。**
 
 ---
 
-## 目录结构
+## data/{品牌名}/ 目录结构
 
 ```
 data/{品牌名}/
-├── raw/                           # 原始搜索数据（每次搜索存一个文件）
-│   ├── q_01_{关键词}.txt
-│   ├── q_02_{关键词}.txt
-│   ├── q03_L0_{关键词}.txt       # Layer 0 嗅探的搜索结果
-│   └── ...
-├── status.json                    # 迭代状态中枢（必须创建）
-├── hidden_risks.json             # 隐匿性风险信号表（发现隐匿信号时才创建）
-├── report_v1.3.md                # 最终报告（按模板8章结构）
-└── report_v1.3.pdf               # 最终报告PDF
+├── raw/                           # 原始搜索数据（脚本自动写入）
+│   └── *.txt                      # 每次搜索一个文件
+├── status.json                    # [可选] 你的思考笔记本
+├── hidden_risks.json             # [可选] 隐匿发现草稿
+├── report_v1.3.md                # ★ 最终报告
+└── report_v1.3.pdf               # ★ 最终报告PDF
 ```
 
-## status.json 最小Schema（复制 assets/status-template.json 后填空）
+---
 
-必须包含的字段：
+## status.json — 思考笔记本 [可选]
 
-| 字段 | 类型 | 说明 | 示例 |
-|------|------|------|------|
-| brand | string | 品牌名 | "赛迪顾问" |
-| phase | string | 阶段 | "completed" |
-| current_round | integer | 当前轮次（必须>=6才能收敛） | 7 |
-| total_searches | integer | 总搜索次数 | 15 |
-| seeds | array | 种子列表，每项含type/value/sentiment_hint | 见下方示例 |
-| sentiment_snapshot | object | 含positive_ratio/neutral_ratio/negative_ratio/data_points | 见下方示例 |
-| risk_events | array | 风险事件列表，每项含id/title/level/status | 见下方示例 |
-| convergence_reason | string | 收敛原因说明 | "round=7, 连续2轮无新信号" |
-| timestamps | object | 含started_at/completed_at/duration_minutes | 见下方示例 |
+用途：帮你记住搜索到哪了、发现了什么、下一步想搜什么。
 
-**seeds数组元素格式**：
-```json
-{"type": "event", "value": "百强县买榜事件", "sentiment_hint": "negative"}
-```
-type可选值: event / person / company / keyword / platform
-sentiment_hint可选值: positive / negative / neutral / mixed
+**不需要严格遵循任何schema**。如果你觉得有用，可以用 `assets/status-template.json` 作为起点自由增删字段。
 
-**sentiment_snapshot格式**：
+如果你更习惯在写报告前直接回顾raw/文件和自己的分析记忆，那完全可以不创建这个文件。
+
+### 参考结构（不是强制的）
+
 ```json
 {
-  "positive_ratio": 0.25,
-  "neutral_ratio": 0.35,
-  "negative_ratio": 0.40,
-  "data_points": 38,
-  "last_updated": "2026-04-20T23:00:00+08:00"
+  "brand": "品牌名",
+  "current_round": 3,
+  "seed_pool": {
+    "seeds": [
+      {"type": "event", "value": "某事件", "note": "..."},
+      {"type": "person", "value": "某人名", "note": "..."}
+    ]
+  },
+  "risk_events": [
+    {"id": "RE-1", "title": "事件标题", "level": "L2/L3", "status": "tracking/resolved"}
+  ],
+  "notes": "自由记录任何你觉得有用的思考..."
 }
 ```
 
-三个ratio之和应接近1.0。
+---
 
-## hidden_risks.json Schema（发现隐匿信号时才创建）
+## hidden_risks.json — 隐匿发现草稿 [可选]
+
+用途：写报告时，帮你回忆分析过程中发现的隐匿信号，方便填入第六章6.4节。
+
+**同样不是强制的**。如果你在分析过程中已经对隐匿发现有了清晰印象，可以直接写报告。
+
+### 参考格式
 
 ```json
 [
   {
     "id": "HR-1",
-    "signal": "信号摘要（一句话）",
-    "source": "来源媒体或平台名称",
-    "url": "真实URL或者写 URL缺失: [原因]",
-    "strategy": "R1到R7中的一个",
-    "related_event": "关联的风险事件ID或名称，如RE001",
-    "strength": "强 或 中强 或 中 或 弱",
-    "concealment_level": "L1 或 L2 或 L3 或 L4 或 L5",
-    "explanation": "为什么这个信号与目标品牌相关（1-2句话）"
+    "signal": "一句话概括",
+    "source": "来源平台",
+    "url": "真实URL 或 URL缺失: 原因",
+    "strategy": "用了哪个思考透镜(R1-R7)",
+    "related_event": "关联的风险事件",
+    "strength": "强/中强/中/弱",
+    "concealment_level": "L1-L5",
+    "explanation": "为什么相关"
   }
 ]
 ```
 
-## raw/ 文件命名规则
+---
 
-| 前缀含义 | 格式 | 示例 |
-|---------|------|------|
-| 第N轮常规搜索 | `q{N}_{关键词}.txt` | `q_03_赛迪顾问.txt` |
-| Layer 0 嗅探 | `q{N}_L0_{关键词}.txt` | `q05_L0_负面定向.txt` |
-| Layer 2 验证放大 | `q{N}_L2_{关键词}.txt` | `q06_L2_南京同构.txt` |
-| 隐匿策略搜索 | `q{N}_R{策略号}_{关键词}.txt` | `q07_R2_关联实体.txt` |
+## raw/ 文件说明
 
-每个raw文件的内容就是该次搜索返回的原始文本结果，不做加工。
+raw/ 中的文件由 `sentiment-collect.py` 脚本自动创建和管理。
+你只需要知道怎么读它们（搜索结果都在里面），不需要关心命名规则。
 
-*v2.1: 去除emoji；字段说明改为表格形式；URL处理规则明确化。*
+*重写说明：v3.0将"产出物规范"改为"过程辅助文件参考"。status.json和hidden_risks.json从强制产出降级为可选工具。*
