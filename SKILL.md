@@ -91,12 +91,14 @@ cp assets/status-template.json data/{品牌名}/status.json
    - 对高相关结果抓全文：--fetch-url "URL"
    - 特别注意：同一事件是否以新的更危险的叙事框架出现？
 
-⑤ 【关键】更新 status.json：
+⑤ 【关键】**立即**更新 status.json（不是最后统一写）：
    - seed_pool：新增种子、标记成熟/枯竭、记录子种子分裂
    - risk_events：新增事件、更新unknowns（删除已解答的、添加新产生的）
    - search_log：追加本轮记录（intent/results_summary/information_gain/next_thinking）
    - hidden_state：如果本轮执行了隐匿发现，更新lens_log/coverage_map/evolution_chain
    - convergence：更新主循环和隐匿子体系的收敛证据
+   - **⚠️ 时效标记**：每个新种子和风险事件必须标注 time_tag（current/recent/stale/historical）
+   - **⚠️ 时效筛选**：不扩散深挖 stale/historical 级别的信息（见 methodology §六）
 
 ⑥ 判断是否收敛（见 methodology.md §三.3）
    不收敛 → 回到①
@@ -153,8 +155,9 @@ python3 scripts/md2pdf.py report_v1.3.md report.pdf
 | 把同一事件+新框架当成重复信息 | 识别为框架升级信号，重点分析 |
 | 为了"完成步骤"而搜索 | 每次搜索都应有明确的信息获取目标 |
 | 按固定清单机械执行Query | 基于分析和状态自主决定每轮搜什么方向 |
-| 不维护status.json或不每轮更新 | **status.json是迭代中枢，每轮必须更新。不更新=失忆=假迭代** |
+| 不维护status.json或不每轮更新 | **status.json是迭代中枢，每轮必须立即更新。不更新=失忆=假迭代** |
 | 把status.json当成产出物交给用户 | 它是内部记忆载体，用户只看报告 |
+| 对陈旧历史信息（1年以上）扩散深挖 | **目标是预警不是考古。stale/historical级别不触发扩散和隐匿扫描** |
 
 ---
 
