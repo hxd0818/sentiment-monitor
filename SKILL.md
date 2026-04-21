@@ -95,7 +95,8 @@ cp assets/status-template.json data/{品牌名}/status.json
    - seed_pool：新增种子、标记成熟/枯竭、记录子种子分裂
    - risk_events：新增事件、更新unknowns（删除已解答的、添加新产生的）
    - search_log：追加本轮记录（intent/results_summary/information_gain/next_thinking）
-   - convergence：更新收敛证据
+   - hidden_state：如果本轮执行了隐匿发现，更新lens_log/coverage_map/evolution_chain
+   - convergence：更新主循环和隐匿子体系的收敛证据
 
 ⑥ 判断是否收敛（见 methodology.md §三.3）
    不收敛 → 回到①
@@ -114,7 +115,7 @@ cp assets/status-template.json data/{品牌名}/status.json
 |-----------|--------|-------|
 | 不知道该怎么设计搜索方向 | `references/methodology.md` §二~§四 | 种子池+Query哲学 |
 | 需要理解迭代机制 | `references/methodology.md` §一~§三 | 状态机+扩散+收敛 |
-| 发现了L2+事件，想找隐匿信号 | `references/hidden-risk-discovery.md` | 七大思考透镜 |
+| 发现了L2+事件，想启动隐匿发现子体系 | `references/hidden-risk-discovery.md` | 隐匿发现迭代体系（hidden_state/链式演化/7透镜） |
 | 需要对事件做纵深挖掘 | `references/risk-tracking.md` | 五个深挖角度 |
 | 常规搜索时想保持警觉 | `references/early-detection.md` | 四个观察维度 |
 | 准备写报告了 | `references/report-writing-guide.md` | 写作原则 |
@@ -170,7 +171,7 @@ sentiment-monitor/
 │   └── status-template.json          ← status.json初始化模板（必须用）
 └── references/
     ├── methodology.md                ← ★ 核心：迭代机制+状态驱动+扩散/收敛物理实现
-    ├── hidden-risk-discovery.md      ← 隐匿发现七大思考透镜
+    ├── hidden-risk-discovery.md      ← 隐匿发现迭代体系（状态+链式演化+7透镜）
     ├── risk-tracking.md              ← 风险深挖五个角度
     ├── early-detection.md            ← 早期发现四个观察维度
     ├── report-writing-guide.md       ← 写作原则+质量指南

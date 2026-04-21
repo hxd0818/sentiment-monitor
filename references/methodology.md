@@ -102,15 +102,12 @@ Agent的上下文窗口会被压缩。压缩后，前面轮次的分析细节会
     }
   },
 
-  "hidden_risks_found": [
-    {
-      "id": "HR-1",
-      "signal": "信号摘要",
-      "lens_used": "R1-R7哪个透镜触发的",
-      "strength": "强|中强|中|弱",
-      "concealment_level": "L1-L5"
-    }
-  ]
+  "hidden_state": {
+    /* 隐匿发现子体系的完整迭代状态。
+       含: lens_log(每次透镜执行记录) / coverage_map(7透镜覆盖状态)
+       / evolution_chain(链式演化记录) / convergence(隐匿子体系收敛判断)
+       完整schema见 references/hidden-risk-discovery.md §二 */
+  }
 }
 ```
 
